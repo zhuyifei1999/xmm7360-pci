@@ -201,6 +201,7 @@ struct xmm_dev {
 	struct net_device *netdev;
 
 	int error;
+	// FIXME: always 0
 	int card_num;
 };
 
@@ -589,13 +590,14 @@ static size_t xmm7360_qp_write_user(struct queue_pair *qp,
 	int page_size = qp->xmm->td_ring[qp->num * 2].page_size;
 	int ret;
 
-	if (size > page_size)
-		size = page_size;
-
-	ret = copy_from_user(qp->user_buf, buf, size);
-	size = size - ret;
 	if (!size)
 		return 0;
+	if (size > page_size)
+		return -EINVAL;
+
+	if (copy_from_user(qp->user_buf, buf, size))
+		return -EFAULT;
+
 	return xmm7360_qp_write(qp, qp->user_buf, size);
 }
 
@@ -626,12 +628,7 @@ static ssize_t xmm7360_cdev_write(struct file *file, const char __user *buf,
 	struct queue_pair *qp = file->private_data;
 	int ret;
 
-	ret = xmm7360_qp_write_user(qp, buf, size);
-	if (ret < 0)
-		return ret;
-
-	*offset += ret;
-	return size;
+	return xmm7360_qp_write_user(qp, buf, size);
 }
 
 static ssize_t xmm7360_cdev_read(struct file *file, char __user *buf, size_t size,
