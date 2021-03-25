@@ -9,7 +9,6 @@ import struct
 import dbus
 import sys
 import time
-import binascii
 import rpc
 import logging
 # must do this before importing pyroute2
@@ -33,7 +32,8 @@ parser.add_argument('-m', '--metric', type=int, default=1000,
 parser.add_argument('-t', '--ip-fetch-timeout', type=int, default=1,
                     help="Retry interval in seconds when getting IP config")
 parser.add_argument('-r', '--noresolv', action="store_true",
-                    help="Don't add modem-provided DNS servers to /etc/resolv.conf")
+                    help="Don't add modem-provided DNS servers to "
+                         "/etc/resolv.conf")
 parser.add_argument('-d', '--dbus', action="store_true",
                     help="Activate Networkmanager Connection via DBUS")
 
@@ -51,7 +51,8 @@ r.execute('UtaMsSsInit')
 r.execute('UtaMsSimOpenReq')
 
 rpc.do_fcc_unlock(r)
-# disable aeroplane mode if had been FCC-locked. first and second args are probably don't-cares
+# disable aeroplane mode if had been FCC-locked. first and second args are
+# probably don't-cares
 rpc.UtaModeSet(r, 1)
 
 r.execute('UtaMsCallPsAttachApnConfigReq',
@@ -205,10 +206,12 @@ else:
     dbus_ip = [dottedQuadToNum(ip) for ip in dns_values['v4']]
     n_ip4 = dbus.Dictionary(
         {
-            "address-data": dbus.Array([addr], signature=dbus.Signature("a{sv}")),
+            "address-data": dbus.Array([addr],
+                                       signature=dbus.Signature("a{sv}")),
             "gateway": ip_addr,
             "method": "manual",
-            "dns": dbus.Array([dbus.UInt32(ip) for ip in dbus_ip], signature=dbus.Signature("u"))
+            "dns": dbus.Array([dbus.UInt32(ip) for ip in dbus_ip],
+                              signature=dbus.Signature("u"))
         }
     )
     n_ip6 = dbus.Dictionary({"method": "ignore"})

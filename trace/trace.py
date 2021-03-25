@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import os
-import binascii
 import struct
 import sys
 

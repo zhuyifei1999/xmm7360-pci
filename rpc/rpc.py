@@ -2,7 +2,6 @@
 
 import os
 import binascii
-import time
 import struct
 import itertools
 import ipaddress
@@ -66,8 +65,6 @@ class XMMRPC(object):
         if ret < len(header + body):
             print("write error: %d", ret)
 
-        have_ack = False
-
         while True:
             resp = self.pump()
             if resp['type'] == 'response':
@@ -108,7 +105,13 @@ class XMMRPC(object):
         else:
             t = 'unsolicited'
 
-        return {'tid': txid, 'type': t, 'code': code, 'body': body, 'content': content}
+        return {
+            'tid': txid,
+            'type': t,
+            'code': code,
+            'body': body,
+            'content': content
+        }
 
     def handle_unsolicited(self, message):
         name = rpc_unsol_table.xmm7360_unsol.get(message['code'], None)
@@ -164,9 +167,9 @@ def _pack_string(val, fmt, elem_type):
 
 def take_asn_int(data):
     assert data.pop(0) == 0x02
-    l = data.pop(0)
+    length = data.pop(0)
     val = 0
-    for i in range(l):
+    for i in range(length):
         val <<= 8
         val |= data.pop(0)
     return val
@@ -190,9 +193,6 @@ def take_string(data):
     padding = take_asn_int(data)
     if count:
         assert count == (valid + padding)
-        field_size = count
-    else:
-        field_size = valid
     payload = data[:valid]
     for i in range(valid + padding):
         data.pop(0)  # eek
@@ -272,10 +272,146 @@ def pack_UtaMsCallPsAttachApnConfigReq(apn):
     apn_string = bytearray(101)
     apn_string[:len(apn)] = apn.encode('ascii')
 
-    args = [0, b'\0'*257, 0, b'\0'*65, b'\0'*65, b'\0'*250, 0, b'\0'*250, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, b'\0'*20, 0, b'\0'*101, b'\0'*257, 0, b'\0'*65, b'\0'*65, b'\0'*250, 0, b'\0'*250, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, b'\0'*20, 0, b'\0'*101,
-            b'\0'*257, 0, b'\0'*65, b'\0'*65, b'\0'*250, 0, b'\0'*250, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0x404, 1, 0, 1, 0, 0, b'\0'*20, 3, apn_string, b'\0'*257, 0, b'\0'*65, b'\0'*65, b'\0'*250, 0, b'\0'*250, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0x404, 1, 0, 1, 0, 0, b'\0'*20, 3, apn_string, 3, 0, ]
+    args = [
+        0,
+        b'\0'*257,
+        0,
+        b'\0'*65,
+        b'\0'*65,
+        b'\0'*250,
+        0,
+        b'\0'*250,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        b'\0'*20,
+        0,
+        b'\0'*101,
+        b'\0'*257,
+        0,
+        b'\0'*65,
+        b'\0'*65,
+        b'\0'*250,
+        0,
+        b'\0'*250,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        b'\0'*20,
+        0,
+        b'\0'*101,
+        b'\0'*257,
+        0,
+        b'\0'*65,
+        b'\0'*65,
+        b'\0'*250,
+        0,
+        b'\0'*250,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0x404,
+        1,
+        0,
+        1,
+        0,
+        0,
+        b'\0'*20,
+        3,
+        apn_string,
+        b'\0'*257,
+        0,
+        b'\0'*65,
+        b'\0'*65,
+        b'\0'*250,
+        0,
+        b'\0'*250,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0x404,
+        1,
+        0,
+        1,
+        0,
+        0,
+        b'\0'*20,
+        3,
+        apn_string,
+        3,
+        0,
+    ]
 
-    types = 'Bs260Ls66s65s250Bs252HLLLLLLLLLLLLLLLLLLLLLs20Ls104s260Ls66s65s250Bs252HLLLLLLLLLLLLLLLLLLLLLs20Ls104s260Ls66s65s250Bs252HLLLLLLLLLLLLLLLLLLLLLs20Ls104s260Ls66s65s250Bs252HLLLLLLLLLLLLLLLLLLLLLs20Ls103BL'
+    types = (
+        'Bs260Ls66s65s250Bs252HLLLLLLLLLLLLLLLLLLLLLs20Ls104s260Ls66s65s2'
+        '50Bs252HLLLLLLLLLLLLLLLLLLLLLs20Ls104s260Ls66s65s250Bs252HLLLLLL'
+        'LLLLLLLLLLLLLLLs20Ls104s260Ls66s65s250Bs252HLLLLLLLLLLLLLLLLLLLL'
+        'Ls20Ls103BL'
+    )
     return pack(types, *args)
 
 
@@ -345,7 +481,8 @@ def UtaModeSet(rpc, mode):
     while True:
         msg = rpc.pump()
         # msg['txid'] will be mode_tid as well
-        if rpc_unsol_table.xmm7360_unsol.get(msg['code'], None) == 'UtaModeSetRspCb':
+        if (rpc_unsol_table.xmm7360_unsol.get(msg['code'], None)
+                == 'UtaModeSetRspCb'):
             if msg['content'][0] != mode:
                 raise IOError(
                     "UtaModeSet was not able to set mode. FCC lock enabled?")
@@ -361,11 +498,11 @@ def get_ip(r):
                     pack_UtaMsCallPsGetNegotiatedDnsReq(), is_async=True)
     dns_values = unpack_UtaMsCallPsGetNegotiatedDnsReq(dns['body'])
 
-    # For some reason, on IPv6 networks, the GetNegIpAddrReq call returns 8 bytes of the IPv6 address followed by our 4 byte IPv4 address.
+    # For some reason, on IPv6 networks, the GetNegIpAddrReq call returns
+    # 8 bytes of the IPv6 address followed by our 4 byte IPv4 address.
     # use the last nonzero IP
     for addr in ip_values[::-1]:
         if addr.compressed != '0.0.0.0':
-            ip_addr = addr.compressed
             return addr.compressed, dns_values
     return None, None
 
