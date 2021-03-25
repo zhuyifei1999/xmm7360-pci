@@ -1427,6 +1427,7 @@ static int xmm7360_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 
 	xmm->pci_dev = pdev;
 	xmm->dev = &pdev->dev;
+	pci_set_drvdata(pdev, xmm);
 
 	if (!xmm) {
 		dev_err(xmm->dev, "kzalloc\n");
@@ -1470,7 +1471,6 @@ static int xmm7360_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	init_waitqueue_head(&xmm->wq);
 	INIT_WORK(&xmm->init_work, xmm7360_dev_init_work);
 
-	pci_set_drvdata(pdev, xmm);
 
 	ret = xmm7360_dev_init(xmm);
 	if (ret)
@@ -1486,7 +1486,6 @@ static int xmm7360_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	return ret;
 
 fail:
-	xmm7360_dev_deinit(xmm);
 	xmm7360_remove(pdev);
 	return ret;
 }
