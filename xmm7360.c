@@ -631,7 +631,7 @@ static void xmm7360_tty_poll_qp(struct queue_pair *qp)
 	}
 }
 
-int xmm7360_cdev_open(struct inode *inode, struct file *file)
+static int xmm7360_cdev_open(struct inode *inode, struct file *file)
 {
 	struct queue_pair *qp =
 		container_of(inode->i_cdev, struct queue_pair, cdev);
@@ -639,14 +639,14 @@ int xmm7360_cdev_open(struct inode *inode, struct file *file)
 	return xmm7360_qp_start(qp);
 }
 
-int xmm7360_cdev_release(struct inode *inode, struct file *file)
+static int xmm7360_cdev_release(struct inode *inode, struct file *file)
 {
 	struct queue_pair *qp = file->private_data;
 	return xmm7360_qp_stop(qp);
 }
 
-ssize_t xmm7360_cdev_write(struct file *file, const char __user *buf,
-			   size_t size, loff_t *offset)
+static ssize_t xmm7360_cdev_write(struct file *file, const char __user *buf,
+				  size_t size, loff_t *offset)
 {
 	struct queue_pair *qp = file->private_data;
 	int ret;
@@ -659,8 +659,8 @@ ssize_t xmm7360_cdev_write(struct file *file, const char __user *buf,
 	return size;
 }
 
-ssize_t xmm7360_cdev_read(struct file *file, char __user *buf, size_t size,
-			  loff_t *offset)
+static ssize_t xmm7360_cdev_read(struct file *file, char __user *buf, size_t size,
+				 loff_t *offset)
 {
 	struct queue_pair *qp = file->private_data;
 	struct xmm_dev *xmm = qp->xmm;
