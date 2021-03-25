@@ -197,8 +197,6 @@ struct xmm_dev {
 	int irq;
 	wait_queue_head_t wq;
 
-	struct work_struct init_work;
-
 	volatile struct control_page *cp;
 	dma_addr_t cp_phys;
 
@@ -1200,8 +1198,6 @@ static void xmm7360_dev_deinit(struct xmm_dev *xmm)
 	int i;
 	xmm->error = -ENODEV;
 
-	cancel_work_sync(&xmm->init_work);
-
 	xmm7360_destroy_net(xmm);
 
 	for (i = 0; i < 8; i++) {
@@ -1414,12 +1410,6 @@ static int xmm7360_dev_init(struct xmm_dev *xmm)
 	return 0;
 }
 
-static void xmm7360_dev_init_work(struct work_struct *work)
-{
-	struct xmm_dev *xmm = container_of(work, struct xmm_dev, init_work);
-	xmm7360_dev_init(xmm);
-}
-
 static int xmm7360_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 {
 	struct xmm_dev *xmm = kzalloc(sizeof(struct xmm_dev), GFP_KERNEL);
@@ -1469,8 +1459,6 @@ static int xmm7360_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	}
 
 	init_waitqueue_head(&xmm->wq);
-	INIT_WORK(&xmm->init_work, xmm7360_dev_init_work);
-
 
 	ret = xmm7360_dev_init(xmm);
 	if (ret)
