@@ -44,13 +44,10 @@
 
 MODULE_LICENSE("Dual BSD/GPL");
 
-static struct pci_device_id xmm7360_ids[] = { {
-						      PCI_DEVICE(0x8086,
-								 0x7360),
-					      },
-					      {
-						      0,
-					      } };
+static struct pci_device_id xmm7360_ids[] = {
+	{ PCI_DEVICE(0x8086, 0x7360), },
+	{ 0 },
+};
 
 MODULE_DEVICE_TABLE(pci, xmm7360_ids);
 
@@ -195,7 +192,7 @@ struct xmm_dev {
 	struct device *dev;
 	struct pci_dev *pci_dev;
 
-	volatile uint32_t *bar0, *bar2;
+	volatile u32 *bar0, *bar2;
 
 	int irq;
 	wait_queue_head_t wq;
@@ -218,35 +215,35 @@ struct xmm_dev {
 };
 
 struct mux_bounds {
-	uint32_t offset;
-	uint32_t length;
+	u32 offset;
+	u32 length;
 };
 
 struct mux_first_header {
-	uint32_t tag;
-	uint16_t unknown;
-	uint16_t sequence;
-	uint16_t length;
-	uint16_t extra;
-	uint16_t next;
-	uint16_t pad;
+	u32 tag;
+	u16 unknown;
+	u16 sequence;
+	u16 length;
+	u16 extra;
+	u16 next;
+	u16 pad;
 };
 
 struct mux_next_header {
-	uint32_t tag;
-	uint16_t length;
-	uint16_t extra;
-	uint16_t next;
-	uint16_t pad;
+	u32 tag;
+	u16 length;
+	u16 extra;
+	u16 next;
+	u16 pad;
 };
 
 #define MUX_MAX_PACKETS 64
 
 struct mux_frame {
 	int n_packets, n_bytes, max_size, sequence;
-	uint16_t *last_tag_length, *last_tag_next;
+	u16 *last_tag_length, *last_tag_next;
 	struct mux_bounds bounds[MUX_MAX_PACKETS];
-	uint8_t data[TD_MAX_PAGE_SIZE];
+	u8 data[TD_MAX_PAGE_SIZE];
 };
 
 struct xmm_net {
@@ -750,8 +747,8 @@ static void xmm7360_mux_frame_init(struct xmm_net *xn, struct mux_frame *frame,
 	frame->last_tag_length = NULL;
 }
 
-static int xmm7360_mux_frame_add_tag(struct mux_frame *frame, uint32_t tag,
-				     uint16_t extra, void *data, int data_len)
+static int xmm7360_mux_frame_add_tag(struct mux_frame *frame, u32 tag,
+				     u16 extra, void *data, int data_len)
 {
 	int total_length;
 	if (frame->n_bytes == 0)
@@ -821,7 +818,7 @@ static int xmm7360_mux_frame_append_packet(struct mux_frame *frame,
 		sizeof(struct mux_next_header) + 4 +
 		(frame->n_packets + 1) * sizeof(struct mux_bounds);
 	int ret;
-	uint8_t pad[16];
+	u8 pad[16];
 
 	if (frame->n_packets >= MUX_MAX_PACKETS)
 		return -1;
@@ -862,7 +859,7 @@ static int xmm7360_mux_control(struct xmm_net *xn, u32 arg1, u32 arg2, u32 arg3,
 {
 	struct mux_frame *frame = &xn->frame;
 	int ret;
-	uint32_t cmdh_args[] = { arg1, arg2, arg3, arg4 };
+	u32 cmdh_args[] = { arg1, arg2, arg3, arg4 };
 	unsigned long flags;
 
 	spin_lock_irqsave(&xn->lock, flags);
@@ -876,10 +873,6 @@ static int xmm7360_mux_control(struct xmm_net *xn, u32 arg1, u32 arg2, u32 arg3,
 	spin_unlock_irqrestore(&xn->lock, flags);
 
 	return ret;
-}
-
-static void xmm7360_net_uninit(struct net_device *dev)
-{
 }
 
 static int xmm7360_net_open(struct net_device *dev)
@@ -934,7 +927,7 @@ static void xmm7360_net_flush(struct xmm_net *xn)
 	}
 
 	ret = xmm7360_mux_frame_add_tag(frame, 'ADTH', xn->channel, &unknown,
-					sizeof(uint32_t));
+					sizeof(u32));
 	if (ret)
 		goto drop;
 	ret = xmm7360_mux_frame_append_data(frame, &frame->bounds[0],
@@ -1084,7 +1077,6 @@ static void xmm7360_net_poll(struct xmm_dev *xmm)
 }
 
 static const struct net_device_ops xmm7360_netdev_ops = {
-	.ndo_uninit = xmm7360_net_uninit,
 	.ndo_open = xmm7360_net_open,
 	.ndo_stop = xmm7360_net_close,
 	.ndo_start_xmit = xmm7360_net_xmit,
@@ -1229,18 +1221,18 @@ static void xmm7360_dev_deinit(struct xmm_dev *xmm)
 	xmm7360_cmd_ring_free(xmm);
 }
 
-static void xmm7360_remove(struct pci_dev *dev)
+static void xmm7360_remove(struct pci_dev *pdev)
 {
-	struct xmm_dev *xmm = pci_get_drvdata(dev);
+	struct xmm_dev *xmm = pci_get_drvdata(pdev);
 
 	xmm7360_dev_deinit(xmm);
 
 	if (xmm->irq)
 		free_irq(xmm->irq, xmm);
-	pci_free_irq_vectors(dev);
-	pci_release_region(dev, 0);
-	pci_release_region(dev, 2);
-	pci_disable_device(dev);
+	pci_free_irq_vectors(pdev);
+	pci_release_region(pdev, 0);
+	pci_release_region(pdev, 2);
+	pci_disable_device(pdev);
 	kfree(xmm);
 }
 
@@ -1422,72 +1414,72 @@ static int xmm7360_dev_init(struct xmm_dev *xmm)
 	return 0;
 }
 
-void xmm7360_dev_init_work(struct work_struct *work)
+static void xmm7360_dev_init_work(struct work_struct *work)
 {
 	struct xmm_dev *xmm = container_of(work, struct xmm_dev, init_work);
 	xmm7360_dev_init(xmm);
 }
 
-static int xmm7360_probe(struct pci_dev *dev, const struct pci_device_id *id)
+static int xmm7360_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 {
 	struct xmm_dev *xmm = kzalloc(sizeof(struct xmm_dev), GFP_KERNEL);
 	int ret;
 
-	xmm->pci_dev = dev;
-	xmm->dev = &dev->dev;
+	xmm->pci_dev = pdev;
+	xmm->dev = &pdev->dev;
 
 	if (!xmm) {
-		dev_err(&(dev->dev), "kzalloc\n");
+		dev_err(xmm->dev, "kzalloc\n");
 		return -ENOMEM;
 	}
 
-	ret = pci_enable_device(dev);
+	ret = pci_enable_device(pdev);
 	if (ret) {
-		dev_err(&(dev->dev), "pci_enable_device\n");
+		dev_err(xmm->dev, "pci_enable_device\n");
 		goto fail;
 	}
-	pci_set_master(dev);
+	pci_set_master(pdev);
 
-	ret = pci_set_dma_mask(dev, 0xffffffffffffffff);
+	ret = pci_set_dma_mask(pdev, 0xffffffffffffffff);
 	if (ret) {
 		dev_err(xmm->dev, "Cannot set DMA mask\n");
 		goto fail;
 	}
 	dma_set_coherent_mask(xmm->dev, 0xffffffffffffffff);
 
-	ret = pci_request_region(dev, 0, "xmm0");
+	ret = pci_request_region(pdev, 0, "xmm0");
 	if (ret) {
-		dev_err(&(dev->dev), "pci_request_region(0)\n");
+		dev_err(xmm->dev, "pci_request_region(0)\n");
 		goto fail;
 	}
-	xmm->bar0 = pci_iomap(dev, 0, pci_resource_len(dev, 0));
+	xmm->bar0 = pci_iomap(pdev, 0, pci_resource_len(pdev, 0));
 
-	ret = pci_request_region(dev, 2, "xmm2");
+	ret = pci_request_region(pdev, 2, "xmm2");
 	if (ret) {
-		dev_err(&(dev->dev), "pci_request_region(2)\n");
+		dev_err(xmm->dev, "pci_request_region(2)\n");
 		goto fail;
 	}
-	xmm->bar2 = pci_iomap(dev, 2, pci_resource_len(dev, 2));
+	xmm->bar2 = pci_iomap(pdev, 2, pci_resource_len(pdev, 2));
 
-	ret = pci_alloc_irq_vectors(dev, 1, 1, PCI_IRQ_MSI | PCI_IRQ_MSIX);
+	ret = pci_alloc_irq_vectors(pdev, 1, 1, PCI_IRQ_MSI | PCI_IRQ_MSIX);
 	if (ret < 0) {
-		dev_err(&(dev->dev), "pci_alloc_irq_vectors\n");
+		dev_err(xmm->dev, "pci_alloc_irq_vectors\n");
 		goto fail;
 	}
 
 	init_waitqueue_head(&xmm->wq);
 	INIT_WORK(&xmm->init_work, xmm7360_dev_init_work);
 
-	pci_set_drvdata(dev, xmm);
+	pci_set_drvdata(pdev, xmm);
 
 	ret = xmm7360_dev_init(xmm);
 	if (ret)
 		goto fail;
 
-	xmm->irq = pci_irq_vector(dev, 0);
+	xmm->irq = pci_irq_vector(pdev, 0);
 	ret = request_irq(xmm->irq, xmm7360_irq0, 0, "xmm7360", xmm);
 	if (ret) {
-		dev_err(&(dev->dev), "request_irq\n");
+		dev_err(xmm->dev, "request_irq\n");
 		goto fail;
 	}
 
@@ -1495,7 +1487,7 @@ static int xmm7360_probe(struct pci_dev *dev, const struct pci_device_id *id)
 
 fail:
 	xmm7360_dev_deinit(xmm);
-	xmm7360_remove(dev);
+	xmm7360_remove(pdev);
 	return ret;
 }
 
